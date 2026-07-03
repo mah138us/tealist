@@ -29,6 +29,22 @@
     color: var(--text);
     line-height: 1.6;
   }
+  header { position: relative; }
+  #menu-btn {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: rgba(255,255,255,0.85);
+    font-size: 1.25rem; cursor: pointer; padding: 4px;
+  }
+  #menu-pop {
+    display: none; position: absolute; right: 10px; top: 100%; margin-top: 4px;
+    background: #fff; border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.15); z-index: 20; overflow: hidden;
+  }
+  .menu-item {
+    display: block; width: 100%; padding: 11px 18px; background: none; border: none;
+    text-align: left; font-size: 0.9rem; color: var(--text); cursor: pointer; white-space: nowrap;
+  }
+  .menu-item:hover { background: var(--green-light); }
   header {
     background: var(--green);
     color: #fff;
@@ -169,7 +185,13 @@
 </head>
 <body>
 <header>
-  <h1>🍵 Tea list</h1>
+  <button id="menu-btn" title="データ管理">⚙</button>
+  <div id="menu-pop">
+    <button class="menu-item" id="btn-export">データを書き出す(JSON)</button>
+    <button class="menu-item" id="btn-import">データを読み込む(JSON)</button>
+    <input type="file" id="file-import" accept=".json,application/json" style="display:none">
+  </div>
+  <h1>Tea list</h1>
 </header>
 
 <div class="container">
@@ -962,7 +984,51 @@ document.getElementById('btn-excel').addEventListener('click', () => {
   URL.revokeObjectURL(a.href);
 });
 
-  
+
+
+// データ管理メニュー(書き出し/読み込み)
+const menuBtn = document.getElementById('menu-btn');
+const menuPop = document.getElementById('menu-pop');
+menuBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  menuPop.style.display = menuPop.style.display === 'block' ? 'none' : 'block';
+});
+document.addEventListener('click', e => {
+  if (!menuPop.contains(e.target)) menuPop.style.display = 'none';
+});
+document.getElementById('btn-export').addEventListener('click', () => {
+  menuPop.style.display = 'none';
+  const blob = new Blob([JSON.stringify(records)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const d = new Date();
+  a.download = `Tea_list_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+document.getElementById('btn-import').addEventListener('click', () => {
+  menuPop.style.display = 'none';
+  document.getElementById('file-import').click();
+});
+document.getElementById('file-import').addEventListener('change', e => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  const rd = new FileReader();
+  rd.onload = async () => {
+    try {
+      const data = JSON.parse(rd.result);
+      if (!Array.isArray(data) || !data.every(r => r && r.id && r.name)) throw 0;
+      if (!confirm('現在のデータを、読み込んだ' + data.length + '件で置き換えます。よろしいですか?')) return;
+      await dbClear();
+      records = data;
+      await dbPut(records);
+      renderList();
+      alert(data.length + '件を読み込みました');
+    } catch (err) { alert('読み込めないファイルです。「データを書き出す」で作成したJSONファイルを指定してください。'); }
+  };
+  rd.readAsText(f);
+});
 
 initDB();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
