@@ -32,8 +32,8 @@
   header { position: relative; }
   #menu-btn {
     position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
-    background: none; border: none; color: rgba(255,255,255,0.85);
-    font-size: 1.25rem; cursor: pointer; padding: 4px;
+    background: none; border: none; color: rgba(255,255,255,0.9);
+    cursor: pointer; padding: 4px; display: flex; align-items: center;
   }
   #menu-pop {
     display: none; position: absolute; right: 10px; top: 100%; margin-top: 4px;
@@ -132,8 +132,8 @@
   }
   .tile:hover { border-color: var(--green); }
   .tile-img {
-    aspect-ratio: 1; background: var(--green-light); display: flex;
-    align-items: center; justify-content: center; font-size: 2.4rem;
+    aspect-ratio: 1; background: #f7f1e5; display: flex;
+    align-items: center; justify-content: center;
   }
   .tile-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .tile-name { padding: 8px 10px; font-size: 0.85rem; line-height: 1.4; height: 3.2em; overflow: hidden; }
@@ -162,9 +162,10 @@
   }
   .map-btn:hover { background: var(--green-light); }
   #btn-excel {
-    padding: 8px 14px; border: none; border-radius: 8px; background: var(--green);
-    color: #fff; font-size: 0.9rem; cursor: pointer;
+    padding: 0 11px; border: none; border-radius: 8px; background: var(--green);
+    color: #fff; cursor: pointer; display: flex; align-items: center; flex-shrink: 0;
   }
+  #q-type, #q-rating { flex: 1; min-width: 0; }
   #btn-excel:hover { background: var(--green-dark); }
   .drop-zone {
     border: 2px dashed var(--border); border-radius: 8px; padding: 18px;
@@ -180,12 +181,13 @@
     .rec-photo { width: 88px; height: 88px; margin-right: 20px; }
     #records.tiles { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
     .stat-box .num { font-size: 1.2rem; }
+    .filters input { flex-basis: 100%; }
   }
 </style>
 </head>
 <body>
 <header>
-  <button id="menu-btn" title="データ管理">⚙</button>
+  <button id="menu-btn" title="データ管理"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z"/><circle cx="12" cy="12" r="3"/></svg></button>
   <div id="menu-pop">
     <button class="menu-item" id="btn-export">データを書き出す(JSON)</button>
     <button class="menu-item" id="btn-import">データを読み込む(JSON)</button>
@@ -263,7 +265,7 @@
       </div>
       <div class="field">
         <label>写真</label>
-        <div class="drop-zone" id="photo-drop">📷 クリックして選択、または画像をドラッグ&ドロップ</div>
+        <div class="drop-zone" id="photo-drop">クリックして選択、または画像をドラッグ&ドロップ</div>
         <input type="file" id="f-photo" accept="image/*" style="display:none">
         <div id="photo-preview" style="display:none;margin-top:8px">
           <img id="photo-img" style="max-width:200px;max-height:200px;border-radius:8px;display:block;border:1px solid var(--border)">
@@ -286,7 +288,7 @@
         <option value="">すべての評価</option>
         <option value="5">★5</option><option value="4">★4以上</option><option value="3">★3以上</option>
       </select>
-      <button id="btn-excel" title="表示中のリストをExcel形式でダウンロード">Excel ⬇</button>
+      <button id="btn-excel" title="表示中のリストをExcel形式でダウンロード"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><polyline points="7 11 12 16 17 11"/><line x1="12" y1="4" x2="12" y2="16"/></svg></button>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div id="count" style="font-size:0.85rem;color:var(--muted)"></div>
@@ -621,6 +623,7 @@ function editRecord(id) {
 ['q-text', 'q-type', 'q-rating'].forEach(id =>
   document.getElementById(id).addEventListener('input', renderList));
 
+const TILE_ICON = `<svg viewBox="0 0 130 130" style="width:52%;height:auto" aria-hidden="true"><path d="M37 62 Q37 92 65 92 Q93 92 93 62 Z" fill="none" stroke="#a67b32" stroke-width="3" stroke-linejoin="round"/><circle cx="97" cy="71" r="8" fill="none" stroke="#a67b32" stroke-width="3"/><path d="M34 102 L96 102" stroke="#a67b32" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M56 50 q5 -7 0 -15" fill="none" stroke="#c9a25f" stroke-width="2.5" stroke-linecap="round"/><path d="M74 50 q-5 -7 0 -15" fill="none" stroke="#c9a25f" stroke-width="2.5" stroke-linecap="round"/></svg>`;
 let viewMode = 'list';
 try { viewMode = localStorage.getItem('tea-view') || 'list'; } catch (e) {}
 function setView(v) {
@@ -671,7 +674,7 @@ function renderList() {
   if (viewMode === 'tile') {
     el.innerHTML = list.map(r => `
     <div class="tile" onclick="editRecord(${r.id})">
-      <div class="tile-img">${r.photo ? `<img src="${r.photo}">` : '<span>🍵</span>'}</div>
+      <div class="tile-img">${r.photo ? `<img src="${r.photo}">` : TILE_ICON}</div>
       <div class="tile-name">${esc(r.name)}</div>
       <button class="del" title="削除" onclick="event.stopPropagation();delRecord(${r.id})">✕</button>
     </div>`).join('');
@@ -1035,4 +1038,3 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catc
 </script>
 </body>
 </html>
-
