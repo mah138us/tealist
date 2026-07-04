@@ -286,13 +286,19 @@
       </select>
       <select id="q-rating">
         <option value="">すべての評価</option>
-        <option value="5">★5</option><option value="4">★4以上</option><option value="3">★3以上</option>
+        <option value="5">★5</option><option value="4">★4</option><option value="3">★3</option><option value="le3">★3以下</option>
       </select>
       <button id="btn-excel" title="表示中のリストをExcel形式でダウンロード"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><polyline points="7 11 12 16 17 11"/><line x1="12" y1="4" x2="12" y2="16"/></svg></button>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div id="count" style="font-size:0.85rem;color:var(--muted)"></div>
-      <div style="display:flex;gap:4px">
+      <div style="display:flex;gap:6px;align-items:center">
+        <select id="q-sort" style="padding:5px 6px;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;background:#fff;color:var(--text)">
+          <option value="">並び替えなし</option>
+          <option value="brand">ブランド順</option>
+          <option value="year-desc">購入年(新しい順)</option>
+          <option value="year-asc">購入年(古い順)</option>
+        </select>
         <button class="view-btn" id="view-list" title="リスト表示">☰</button>
         <button class="view-btn" id="view-tile" title="タイル表示">▦</button>
       </div>
@@ -620,7 +626,7 @@ function editRecord(id) {
 }
 
 // 一覧
-['q-text', 'q-type', 'q-rating'].forEach(id =>
+['q-text', 'q-type', 'q-rating', 'q-sort'].forEach(id =>
   document.getElementById(id).addEventListener('input', renderList));
 
 const TILE_ICON = `<svg viewBox="0 0 130 130" style="width:52%;height:auto" aria-hidden="true"><path d="M37 62 Q37 92 65 92 Q93 92 93 62 Z" fill="none" stroke="#a67b32" stroke-width="3" stroke-linejoin="round"/><circle cx="97" cy="71" r="8" fill="none" stroke="#a67b32" stroke-width="3"/><path d="M34 102 L96 102" stroke="#a67b32" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M56 50 q5 -7 0 -15" fill="none" stroke="#c9a25f" stroke-width="2.5" stroke-linecap="round"/><path d="M74 50 q-5 -7 0 -15" fill="none" stroke="#c9a25f" stroke-width="2.5" stroke-linecap="round"/></svg>`;
@@ -654,14 +660,27 @@ function renderList() {
 
   const q = document.getElementById('q-text').value.toLowerCase();
   const type = sel.value;
-  const minR = +document.getElementById('q-rating').value || 0;
+  const ratingV = document.getElementById('q-rating').value;
   const list = records
     .filter(r => !type || r.type === type)
-    .filter(r => (r.rating || 0) >= minR)
+    .filter(r => !ratingV || (ratingV === 'le3'
+      ? (r.rating > 0 && r.rating <= 3)
+      : r.rating === +ratingV))
     .filter(r => !q || [r.name, r.origin, r.brand, r.kind, r.year, r.grade, r.lot, r.memo, r.note]
       .join(' ').toLowerCase().includes(q));
+  const sortV = document.getElementById('q-sort').value;
+  const emptyLast = (a, b, key) => (!a[key] && b[key]) ? 1 : (a[key] && !b[key]) ? -1 : 0;
+  if (sortV === 'brand') {
+    list.sort((a, b) => emptyLast(a, b, 'brand')
+      || (a.brand || '').localeCompare(b.brand || '', 'ja')
+      || (a.name || '').localeCompare(b.name || '', 'ja'));
+  } else if (sortV === 'year-desc') {
+    list.sort((a, b) => emptyLast(a, b, 'year') || (b.year || '').localeCompare(a.year || ''));
+  } else if (sortV === 'year-asc') {
+    list.sort((a, b) => emptyLast(a, b, 'year') || (a.year || '').localeCompare(b.year || ''));
+  }
   lastList = list;
-  const filtered = q || type || minR;
+  const filtered = q || type || ratingV;
   document.getElementById('count').textContent =
     filtered ? `${list.length}件 / 全${records.length}件` : `全${records.length}件`;
   const el = document.getElementById('records');
@@ -1038,5 +1057,3 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catc
 </script>
 </body>
 </html>
-
-
